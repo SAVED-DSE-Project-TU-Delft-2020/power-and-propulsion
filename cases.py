@@ -119,10 +119,26 @@ def Case0(rho, Vs, CLmax):
 
 
     
+#___CASE 00 ACCELERATION CLIMB
+        
+def Case00(cd0, k1, k2, dVdt, q, g0, alpha, beta, WS_range):
+    '''
+    calculates the wing loading for accelerating climb
+    designing for climb 
+    '''
+    T_W = []
+    W_S = []
     
+    n = 1 + dVdt / g0
     
+    for WS in WS_range:
+        TW =  q / alpha * (cd0 / WS + k1 * (n * beta / q)**2 * WS + k2 * n * beta / q)  + beta / alpha * (1 + 1 / g0 * dVdt) 
+        T_W.append(TW)
+        W_S.append(WS)
+        
+    plt.plot(W_S, T_W)    
     
-    
+
     
     
     
