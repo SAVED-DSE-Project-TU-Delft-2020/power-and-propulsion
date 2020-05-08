@@ -3,6 +3,11 @@
 Created on Thu May  7 12:19:59 2020
 
 @author: Raven
+
+This program is used to generate the loading diagram, which can be constructed from several cases.
+run applyformat() to apply the formatting of the diagram
+Altitude calculations based on ISA
+
 """
 
 from isacalc import isa
@@ -156,10 +161,17 @@ def Case00(cd0, k1, k2, dVdt, V, h, g0, alpha, beta, WS_range):
     plt.plot(W_S, T_W, label='Case 00', linewidth=4)    
     
 def applyformat():
+    plt.xlim(0,160)
+    plt.ylim(0,0.5)
     plt.rcParams['font.size'] = 18.0
+    plt.rc('axes', titlesize=28)
     plt.legend()
     plt.xlabel("W/S [$N/m^2$]")
-    plt.ylabel("W/P [N/W]")
+    plt.ylabel("W/P [$N/W$]")
+    plt.grid(color='grey', linestyle='-', linewidth=1)
+
+
+
 
 '''
 Values used for estimation:
@@ -169,6 +181,7 @@ WS = 54
 Case1(28,500,cd0,0.9,WS_range)
 Case2(cd0,k1,k1,6,500,0.9,1,WS_range)
 Case3(cd0,k1,k2,20,9.81,7,500,0.9,1,WS_range)
+Case4(cd0,k1,k2,5,9.81,10,0,0.9,1,WS_range)
 Case8(cd0,k1,k2,28,5,0.6,2000,0.8,1,WS_range)
 Case0(1.16727,14,1.06)
 Case00(cd0,k1,k2,5,6,500,9.81,0.9,1,WS_range)
