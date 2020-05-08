@@ -31,7 +31,7 @@ def Case1(V, h, cd0, alpha, WS_range):
     
     for WS in WS_range:
         TW = (q * cd0) / (alpha * WS)
-        T_W.append(TW)
+        T_W.append(1/(V*TW))
         W_S.append(WS)
     
     plt.plot(W_S, T_W)
@@ -52,7 +52,7 @@ def Case2(cd0, k1, k2, V, h, alpha, beta, WS_range):
     
     for WS in WS_range:
         TW =  beta / alpha * (k1 * beta / q * WS + k2 + cd0 / (beta / q * WS) + 1)   
-        T_W.append(TW)
+        T_W.append(1/(V*TW))
         W_S.append(WS)
         
     plt.plot(W_S, T_W)
@@ -75,7 +75,7 @@ def Case3(cd0, k1, k2, V, g0, Rc, h, alpha, beta, WS_range):
     
     for WS in WS_range:
         TW = beta / alpha * (k1 * n**2 * beta / q * WS + k2 * n + cd0 / (beta / q * WS))
-        T_W.append(TW)
+        T_W.append(1/(V*TW))
         W_S.append(WS)
 
     plt.plot(W_S, T_W)
@@ -96,7 +96,7 @@ def Case4(cd0, k1, k2, dVdt, g0, V, h, alpha, beta, WS_range):
     
     for WS in WS_range:
         TW = beta / alpha * (k1 * beta / q * WS + k2 + cd0 / beta * q * WS + 1 / g0 * dVdt) 
-        T_W.append(TW)
+        T_W.append(1/(V*TW))
         W_S.append(WS)
 
     plt.plot(W_S, T_W)
@@ -116,7 +116,7 @@ def Case8(cd0, k1, k2, V, dhdt, CL, h, alpha, beta, WS_range):
     
     for WS in WS_range:
         TW = beta / alpha * (k1 * beta / q * WS + k2 + cd0 / (beta / q * WS) + 1 / V * dhdt)
-        T_W.append(TW)
+        T_W.append(1/(V*TW))
         W_S.append(WS)
 
     plt.plot(W_S, T_W)
@@ -150,7 +150,7 @@ def Case00(cd0, k1, k2, dVdt, V, h, g0, alpha, beta, WS_range):
     
     for WS in WS_range:
         TW =  q / alpha * (cd0 / WS + k1 * (n * beta / q)**2 * WS + k2 * n * beta / q)  + beta / alpha * (1 + 1 / g0 * dVdt) 
-        T_W.append(TW)
+        T_W.append(1/(V*TW))
         W_S.append(WS)
         
     plt.plot(W_S, T_W)    
