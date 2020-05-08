@@ -21,7 +21,7 @@ q        = 457.57
 def Case1(q, cd0, alpha, WS_range):
     '''
     calculates the wing loading for constant altitude and speed cruise
-    inputs are q, cd0, alpha, ws_range
+    designing for cruise speed
     '''
     T_W = []
     W_S = []
@@ -39,7 +39,7 @@ def Case1(q, cd0, alpha, WS_range):
 def Case2(cd0, k1, k2, V, dhdt, q, alpha, beta, WS_range):
     '''
     calculates the wing loading for constant speed climb
-    inputs are cd0, k1, k2, cruise V, climb rate dhdt, q, alpha and beta
+    designing for climb 
     '''
     T_W = []
     W_S = []
@@ -57,7 +57,7 @@ def Case2(cd0, k1, k2, V, dhdt, q, alpha, beta, WS_range):
 def Case3(cd0, k1, k2, V, g0, Rc, q, alpha, beta, WS_range):
     '''
     calculates the wing loading for constant altitude/ speed turn
-    inputs are cd0, k1, k2, cruise V, gravity g0, turn radius Rc, q, alpha and beta
+    designing for turn radius
     '''
     T_W = []
     W_S = []
@@ -75,7 +75,10 @@ def Case3(cd0, k1, k2, V, g0, Rc, q, alpha, beta, WS_range):
 #___CASE 4 HORIZONTAL ACCELERATION
 
 def Case4(cd0, k1, k2, dVdt, g0, q, alpha, beta, WS_range):
-    
+    '''
+    calculates the wing loading for horizontal acceleration
+    designing for dVdt (acceleration)
+    '''
     T_W = []
     W_S = []
     
@@ -89,7 +92,10 @@ def Case4(cd0, k1, k2, dVdt, g0, q, alpha, beta, WS_range):
 #___CASE 8 SERVICE CEILING
   
 def Case8(cd0, k1, k2, V, dhdt, CL, q, alpha, beta, WS_range):
-
+    '''
+    calculates the wing loading for service ceiling
+    designing for maximum altitude
+    '''
     T_W = []
     W_S = []
     
@@ -104,13 +110,14 @@ def Case8(cd0, k1, k2, V, dhdt, CL, q, alpha, beta, WS_range):
 #___CASE 0 STALL SPEED
     
 def Case0(rho, Vs, CLmax):
-    
+    '''
+    calculates the wing loading for stall speed
+    designing for minimum airspeed
+    '''    
     WS = 1/2 * rho * Vs**2 * CLmax
     plt.axvline(x=WS)
 
 
-#test
-    
     
     
     
