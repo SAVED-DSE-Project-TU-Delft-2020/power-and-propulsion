@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 import scipy as np
 
 
-def Energy1(V, h, cd0, alpha, WS, MTOW, g0, eta1, rang=75*1000,MPL=3):
+def Energy1(V, h, cd0, alpha, WS, MTOW, etaBat, etaElec, DoD, g0=9.81, rang=75*1000,MPL=3):
     '''
     Calculates the total energy consumption in cruise.
-    Corresponds to cases 1&4 
+    Corresponds to cases 1. Acceleration is neglected
     Returns total energy consumption for return trip
     '''
     #dynamic pressure
@@ -28,7 +28,7 @@ def Energy1(V, h, cd0, alpha, WS, MTOW, g0, eta1, rang=75*1000,MPL=3):
        
     #Total efficiency and time per run
     
-    etatot= eta1
+    etatot= etaBat * etaElec
     t    = rang/V
         
     #____DEPARTURE
@@ -42,7 +42,7 @@ def Energy1(V, h, cd0, alpha, WS, MTOW, g0, eta1, rang=75*1000,MPL=3):
     #Calculating time in cruise and energy consumption
     
 
-    E    = PbatD * t
+    E    = PbatD * t / DoD
 
     #____RETURN
         
@@ -54,16 +54,16 @@ def Energy1(V, h, cd0, alpha, WS, MTOW, g0, eta1, rang=75*1000,MPL=3):
     
     #Calculating time in cruise and energy consumption
 
-    E    += PbatR * t
+    E    += PbatR * t / DoD
 
     return E
 
 
 
-def Energy2(cd0, k1, k2, V, h, alpha, beta, WS, MTOW, g0, eta1, MPL=3):
+def Energy2(cd0, k1, k2, V, h, alpha, beta, WS, MTOW, etaBat, etaElec, DoD, g0=9.81, MPL=3):
     '''
     Calculates the total energy consumption in VTOL.
-    Corresponds to cases 2&00 
+    Corresponds to cases 2. Acceleration is negelected
     Returns total energy consumption for return trip
     '''
     #dynamic pressure
@@ -77,7 +77,7 @@ def Energy2(cd0, k1, k2, V, h, alpha, beta, WS, MTOW, g0, eta1, MPL=3):
     
     #Total efficiency and time per run
     
-    etatot= eta1
+    etatot= etaBat * etaElec
     t    = h/V
     
     #____DEPARTURE
@@ -88,9 +88,9 @@ def Energy2(cd0, k1, k2, V, h, alpha, beta, WS, MTOW, g0, eta1, MPL=3):
     
     PbatD  = PreqD * etatot
     
-    #Calculating time in ascend and energy consumption
+    #Calculating time in ascend and descend energy consumption
     
-    E    = PbatD * t
+    E    = PbatD * t * 2 / DoD
 
     #____RETURN
         
@@ -102,7 +102,7 @@ def Energy2(cd0, k1, k2, V, h, alpha, beta, WS, MTOW, g0, eta1, MPL=3):
     
     #Calculating time in cruise and energy consumption
     
-    E    += PbatR * t
+    E    += PbatR * t * 2 / DoD
 
     return E
     
