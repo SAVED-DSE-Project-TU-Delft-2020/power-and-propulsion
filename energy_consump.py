@@ -16,6 +16,7 @@ def Energy1(V, h, cd0, alpha, WS, MTOW, etaBat, etaElec, DoD, g0=9.81, rang=75*1
     Corresponds to cases 1. Acceleration is neglected
     Returns total energy consumption for return trip
     '''
+    
     #dynamic pressure
     
     _,_,rho = isa(h)
