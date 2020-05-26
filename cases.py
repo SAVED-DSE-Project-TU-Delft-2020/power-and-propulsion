@@ -175,13 +175,14 @@ def Case00(cd0, k1, k2, dVdt, V, h, alpha, beta, WS_range=np.arange(5,300,1), g0
     plt.plot(W_S, T_W, label='Case 00', linewidth=4)    
     
 def applyformat():
-#    plt.xlim(0,260)
-#    plt.ylim(0,1)
+    plt.xlim(0,160)
+    plt.ylim(0,1)
     plt.rcParams['font.size'] = 18.0
     plt.rc('axes', titlesize=28)
-    plt.legend()
-    plt.xlabel("W/S [$N/m^2$]")
-    plt.ylabel("W/P [$N/W$]")
+    plt.legend(prop={'size': 40})
+    plt.xlabel("W/S [$N/m^2$]", fontsize=38)
+    plt.ylabel("W/P [$N/W$]", fontsize=38)
+    
     plt.grid(color='grey', linestyle='-', linewidth=1)
 
 
