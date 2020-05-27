@@ -73,14 +73,14 @@ def P_to(W, rho, A_prop, V_to):
     P_to = 0.5*T_to*V_to*np.sqrt(1+(2*T_to/(rho*V_to**2*A_prop)))
     return P_to
 
-def P_climb(W, Cl_max, Cd, S, phi, rho):
+def P_climb(W, Cl_max, Cd_climb, S, phi, rho):
     phi = phi * np.pi/180
     rho_sl=1.225
     V_climb = 1.2*np.sqrt(2*W/(S*rho_sl*Cl_max))
     V_ver = V_climb*np.sin(phi)
     q_c = q(rho, V_climb)
     
-    P_climb = (W * np.sin(phi) + Cd*q_c*S)*V_climb
+    P_climb = (W * np.sin(phi) + Cd_climb*q_c*S)*V_climb
     return P_climb, V_ver
 
 def P_cruise(q, S, Cd, V_cruise):
@@ -123,15 +123,15 @@ def Cd(Cl, A, e, Cd0):
 
 #WEIGHT
     
-def W(m_bat, m_eng, m_struc, m_sensors, PL=True):
+def W_tot(m_bat, m_eng, m_struc, m_sensors, PL=True):
     if PL:
         m_pl = 3
     else: 
         m_pl = 0
     g = 9.81
     
-    W = (m_bat+m_eng+m_struc+m_sensors+m_pl)*g
-    return W
+    W_tot = (m_bat+m_eng+m_struc+m_sensors+m_pl)*g
+    return W_tot
 
 #ENERGIES
     
@@ -151,10 +151,10 @@ def E_to(W, A_prop, V_to=6, h_trans=20):
    
     return E, t[-1], h[-1]
 
-def E_climb(W, Cl_max, Cd, S, phi, t_start, h_cruise=500, h_trans=20):
+def E_climb(W, Cl_max, Cd_climb, S, phi, h_cruise=500, h_trans=20):
     
     h = np.array([h_trans])
-    t = np.array([t_start])
+    t = np.array([0])
     P_c = np.array([0])
     dt = 0.01
     E = 0
@@ -162,20 +162,15 @@ def E_climb(W, Cl_max, Cd, S, phi, t_start, h_cruise=500, h_trans=20):
     
     while h[-1]<h_cruise:
         _,_,rho = isa(round(h[-1],4))
-        P, V_ver = P_climb(W, Cl_max, Cd, S, phi, rho)
+        P, V_ver = P_climb(W, Cl_max, Cd_climb, S, phi, rho)
         E += P*dt
         h = np.append(h,h[-1]+V_ver*dt)
         t = np.append(t,t[-1]+dt)
         P_c = np.append(P_c,P)
-
-    P_c = np.delete(P_c,0)
-    t = np.delete(t,t_start)
-    plt.plot(t,P_c)
-    plt.show()
         
     return E, t[-1], h[-1]
         
-def E_cruise(W, S, Cl, LD, A, e, Cd0, h_cruise=500,h_trans=20,phi=45, r=75000):
+def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, h_cruise=500,h_trans=20,phi=45, r=75000):
     phi = phi * np.pi/180
     s_climb = (h_cruise-h_trans)/np.sin(phi)
     s_glide = LD*(h_cruise-h_trans)
@@ -189,8 +184,8 @@ def E_cruise(W, S, Cl, LD, A, e, Cd0, h_cruise=500,h_trans=20,phi=45, r=75000):
     
     while x[-1]<s:
         _,_,rho = isa(round(h_cruise,4))
-        V_c = V_cruise(W, Cl, S, rho)
-        Cd_c = Cd(Cl, A, e, Cd0)
+        V_c = V_cruise(W, Cl_cruise, S, rho)
+        Cd_c = Cd(Cl_cruise, A, e, Cd0)
         q_c = q(rho, V_c) 
         P = P_cruise(q_c, S, Cd_c, V_c)
         E += P*dt
@@ -218,7 +213,26 @@ def E_landing(W, A_prop, h_landing=20, V_des=4):
     return E, t[-1], h[-1]
         
     
+def E_sensors(t, P_sensors=25.25):
     
+    E_s = t*P_sensors
+    
+    return E_s 
+
+
+def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0):
+    
+    E_T,t_t,_ = E_to(W, A_prop, V_to=6, h_trans=20)
+    E_Cl,t_Cl,_ = E_climb(W, Cl_max, Cd_climb, S, phi, h_cruise=500, h_trans=20)
+    E_Cr,t_Cr = E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, h_cruise=500,h_trans=20,phi=45, r=75000)
+    E_L,t_L,_ = E_landing(W, A_prop, h_landing=20, V_des=4)
+    
+    t = t_t+t_Cl+t_Cr+t_L
+    E_s= E_sensors(t)
+    
+    E = E_T+E_Cl+E_Cr+E_L+E_s   
+
+    return E, t
 
 
 
