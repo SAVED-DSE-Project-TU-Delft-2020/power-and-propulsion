@@ -26,8 +26,7 @@ DoD = 0.75
  
 def main(m_bat, m_eng, m_struc, m_sensors, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, eta, DoD):
     
-    W_incl = W_tot(m_bat, m_eng, m_struc, m_sensors) 
-    W_excl = W_tot(m_bat, m_eng, m_struc, m_sensors, PL=False)
+    W_incl, W_excl = W_tot(m_bat, m_eng, m_struc, m_sensors), W_tot(m_bat, m_eng, m_struc, m_sensors, PL=False) 
     
     E_go, t_go = E_trip(W_incl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0)
     E_back, t_back = E_trip(W_excl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0)
