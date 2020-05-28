@@ -6,7 +6,6 @@ Created on Fri May  8 11:13:48 2020
 """
 import math
 import scipy as np
-import matplotlib.pyplot as plt
 
 #ISA
 
@@ -230,7 +229,7 @@ def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0):
     t = t_t+t_Cl+t_Cr+t_L
     E_s= E_sensors(t)
     
-    E = E_T+E_Cl+E_Cr+E_L+E_s   
+    E = E_T+E_Cl+E_Cr+E_L+E_s
 
     return E, t
 
