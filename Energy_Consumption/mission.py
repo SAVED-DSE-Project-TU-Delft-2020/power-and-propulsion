@@ -35,11 +35,7 @@ def main(m_bat, m_eng, m_struc, m_sensors, A_prop, Cl_max, Cd_climb, S, phi, Cl_
     
     E_tot = E_tot/eta/DoD
     e_d = 248*3600
-    
-<<<<<<< HEAD
     mission_failpass = E_tot/e_d < m_bat
 
     return E_tot, mission_failpass
-=======
-    return E_tot, mission_failpass
->>>>>>> d8bf68fae033167384069908718f19e3b43dd8e8
+
