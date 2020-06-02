@@ -8,14 +8,19 @@ Created on Fri May 29 10:52:12 2020
 import scipy as np
 from scipy import special
 from isacalc import isa
+import matplotlib.pyplot as plt
 
 #ORDERED ROTATIONAL NOISE
 
-def p_m(m, S, R, A, P_h, T, B, M_t, theta):
+def p_m(m, S, R, P_h, T, B, M_t, theta):
     
+    A = R**2*np.pi
     T = 0.22480894244319*T
     J_mb = np.special.jn(m*B, 0.8*M_t*m*B*np.sin(theta))
 #    p = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/M_t**2-np.absolute(T*np.cos(theta)))*J_mb
+    
+#    p2 = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/((0.8*M_t)**2)-np.absolute(T*np.cos(theta)))*J_mb
+  
     p = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/M_t**2)*J_mb
     
     return p
@@ -109,11 +114,10 @@ def position(xyzsource, xyzobserver):
 def noise(xyzsource, xyzobserver, d_inch, P_h, T, B, RPM, h):
     
     S, theta = position(xyzsource, xyzobserver)
-    A = A_ft(d_inch)
     R_ft = 0.0833333333*d_inch/2
     m = 1
     gamma, R, Temp = 1.4, 287, isa(h)[1]
-    M_t = V_r(RPM, d_inch, 1)/np.sqrt(gamma*R*Temp)
+    M_t = V_r(RPM, d_inch, 1)*0.3048/np.sqrt(gamma*R*Temp)
     V_07 = V_r(RPM, d_inch, 0.7) 
     
     #Assumption blade area
@@ -124,8 +128,7 @@ def noise(xyzsource, xyzobserver, d_inch, P_h, T, B, RPM, h):
     
     for S, theta in zip(S, theta):
         #ORDERED ROTATIONAL NOISE PRESSURE AT OBSERVER
-        
-        rotationp = p_m(m, S, R_ft, A, P_h, T, B, M_t, theta)
+        rotationp = p_m(m, S, R_ft, P_h, T, B, M_t, theta)
         p_rn.append(rotationp)
         
         #VORTEX NOISE 
@@ -133,20 +136,41 @@ def noise(xyzsource, xyzobserver, d_inch, P_h, T, B, RPM, h):
         vortexSPL_obs = SPL_to_PWL_dist(vortexSPL, 300, S_obs=S)
         vortexp = SPL_to_p(vortexSPL_obs)
         p_v.append(vortexp)
-        
+
         
     p_sum = sum(p_rn+p_v)
-    
     SPL = p_to_SPL(p_sum)
-    
+
     return SPL
 
 
 
+#plst=list()
+#thetalst=list()
+#for theta in np.arange(0,np.pi*1.05,0.05*np.pi):
+#    p=p_m(1, 3, 0.0833333333*15.5/2, 1.36, 55.77, 3, 0.75, theta)
+#    thetalst.append(theta)
+#    plst.append(p)
+#    
+#plt.plot(thetalst,plst)
+#plt.show()
+#plt.ylabel('p')
+#plt.xlabel('theta')
+#    
     
-    
-    
-    
-    
-    
-    
+
+
+#plst=list()
+#thetalst=list()
+#for B in np.arange(0,4.01,1):
+#    p,J_mb=p_m(1, 4.757217847769028, 0.645833333075, 1.36, 55.7, B, 0.7053836047832067, 0.7610127542247298)
+#    thetalst.append(B)
+#    plst.append(B*J_mb)
+#    
+#plt.plot(thetalst,plst)
+#plt.show()
+#plt.ylabel('b*bessel')
+#plt.xlabel('b')
+
+
+
