@@ -15,13 +15,12 @@ import matplotlib.pyplot as plt
 def p_m(m, S, R, P_h, T, B, M_t, theta):
     
     A = R**2*np.pi
-    T = 0.22480894244319*T
     J_mb = np.special.jn(m*B, 0.8*M_t*m*B*np.sin(theta))
-#    p = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/M_t**2-np.absolute(T*np.cos(theta)))*J_mb
+    p = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/M_t**2-T*np.cos(theta))*J_mb
     
 #    p2 = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/((0.8*M_t)**2)-np.absolute(T*np.cos(theta)))*J_mb
   
-    p = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/M_t**2)*J_mb
+#    p = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/M_t**2)*J_mb
     
     return p
 
@@ -145,18 +144,18 @@ def noise(xyzsource, xyzobserver, d_inch, P_h, T, B, RPM, h):
 
 
 
-#plst=list()
-#thetalst=list()
-#for theta in np.arange(0,np.pi*1.05,0.05*np.pi):
-#    p=p_m(1, 3, 0.0833333333*15.5/2, 1.36, 55.77, 3, 0.75, theta)
-#    thetalst.append(theta)
-#    plst.append(p)
-#    
-#plt.plot(thetalst,plst)
-#plt.show()
-#plt.ylabel('p')
-#plt.xlabel('theta')
-#    
+plst=list()
+thetalst=list()
+for theta in np.arange(0,np.pi*1.05,0.02*np.pi):
+    p=p_m(1,3,0.645833333075,1.36,12.521858094085683,3, 0.75, theta)
+    thetalst.append(theta*180/np.pi)
+    plst.append(p)
+
+plt.plot(thetalst,plst)
+plt.show()
+plt.ylabel('p')
+plt.xlabel('theta')
+    
     
 
 
