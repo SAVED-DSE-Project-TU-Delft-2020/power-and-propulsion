@@ -18,10 +18,6 @@ def p_m(m, S, R, P_h, T, B, M_t, theta):
     J_mb = np.special.jn(m*B, 0.8*M_t*m*B*np.sin(theta))
     p = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/M_t**2-T*np.cos(theta))*J_mb
     
-#    p2 = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/((0.8*M_t)**2)-np.absolute(T*np.cos(theta)))*J_mb
-  
-#    p = 169.3*m*B*R*M_t/(S*A)*(0.76*P_h/M_t**2)*J_mb
-    
     return p
 
 #VORTEX NOISE
@@ -93,7 +89,7 @@ engine_right_in = [0, spanloc_in*3, 0]
 engine_left_out = [0, -spanloc_out*3, 0]
 engine_left_in = [0, -spanloc_in*3, 0]
 xyzsource = np.array((engine_right_out, engine_right_in, engine_left_out, engine_left_in))
-xyzobserver = np.array([-1,0,0])
+
 
 def position(xyzsource, xyzobserver):
     S = np.array([])
@@ -102,7 +98,7 @@ def position(xyzsource, xyzobserver):
         distance = np.linalg.norm(np.array(xyz)-np.array(xyzobserver))
         opposite = np.absolute(xyz[0]-xyzobserver[0])
         adjacent = np.absolute(xyz[1]-xyzobserver[1])
-        angle = np.arctan2(opposite, adjacent)
+        angle = np.arctan2(opposite, adjacent)+0.5*np.pi
         S = np.append(S,distance/0.3048)
         thetas = np.append(thetas, angle)
     
@@ -110,9 +106,8 @@ def position(xyzsource, xyzobserver):
 
 #NOISE CALCULATION
 
-def noise(xyzsource, xyzobserver, d_inch, P_h, T, B, RPM, h):
+def noise(xyzsource, d_inch, P_h, T, B, RPM, h):
     
-    S, theta = position(xyzsource, xyzobserver)
     R_ft = 0.0833333333*d_inch/2
     m = 1
     gamma, R, Temp = 1.4, 287, isa(h)[1]
@@ -122,39 +117,56 @@ def noise(xyzsource, xyzobserver, d_inch, P_h, T, B, RPM, h):
     #Assumption blade area
     A_b = 2/B*1/9
     
-    p_rn = []
-    p_v = []
+    p_rn = list()
+    p_v = list()
+    SPLlst = list()
+    xlst = list()
+    ylst = list()
     
-    for S, theta in zip(S, theta):
-        #ORDERED ROTATIONAL NOISE PRESSURE AT OBSERVER
-        rotationp = p_m(m, S, R_ft, P_h, T, B, M_t, theta)
-        p_rn.append(rotationp)
-        
-        #VORTEX NOISE 
-        vortexSPL = SPL_vortex(A_b, V_07)
-        vortexSPL_obs = SPL_to_PWL_dist(vortexSPL, 300, S_obs=S)
-        vortexp = SPL_to_p(vortexSPL_obs)
-        p_v.append(vortexp)
+    for y in np.arange(-10,0.1,1):
+        for x in np.arange(-10,0.1,1): 
+            xyzobserver=[x,y,0]
+
+            S, theta = position(xyzsource, xyzobserver)
+            
+            for S, theta in zip(S, theta):
+                #ORDERED ROTATIONAL NOISE PRESSURE AT OBSERVER
+                rotationp = p_m(m, S, R_ft, P_h, T, B, M_t, theta)
+                p_rn.append(rotationp)
+                
+                #VORTEX NOISE AT OBSERVER
+                vortexSPL = SPL_vortex(A_b, V_07)
+                vortexSPL_obs = SPL_to_PWL_dist(vortexSPL, 300, S_obs=S)
+                vortexp = SPL_to_p(vortexSPL_obs)
+                p_v.append(vortexp)
 
         
-    p_sum = sum(p_rn+p_v)
-    SPL = p_to_SPL(p_sum)
+            p_sum = sum(p_rn+p_v)
+            SPL = p_to_SPL(p_sum)
+            SPLlst.append(SPL)
+            xlst.append(x)
+            ylst.append(y)
 
-    return SPL
+    return np.array(SPLlst).reshape(int(np.sqrt(len(SPLlst))),int(np.sqrt(len(SPLlst))))
 
 
 
-plst=list()
-thetalst=list()
-for theta in np.arange(0,np.pi*1.05,0.02*np.pi):
-    p=p_m(1,3,0.645833333075,1.36,12.521858094085683,3, 0.75, theta)
-    thetalst.append(theta*180/np.pi)
-    plst.append(p)
-
-plt.plot(thetalst,plst)
-plt.show()
-plt.ylabel('p')
-plt.xlabel('theta')
+#plst=list()
+#thetalst=list()
+#for theta in np.arange(0,2*np.pi*1.026,0.05):
+#    p=p_m(1,3,0.645833333075,1.36,12.521858094085683,3, 0.75, theta)
+#    if p>0:
+#        thetalst.append(theta-0.5*np.pi)
+#        plst.append(p)
+#    else:
+#        thetalst.append(theta-0.5*np.pi)
+#        plst.append(-p)
+#
+##plt.plot(thetalst,plst)
+#plt.polar(thetalst,plst)
+#plt.show()
+#plt.ylabel('p')
+#plt.xlabel('theta')
     
     
 
