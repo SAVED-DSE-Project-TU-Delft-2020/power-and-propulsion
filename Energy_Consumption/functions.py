@@ -70,6 +70,7 @@ def P_to(W, rho, A_prop, V_to):
     T_to = 1.2 * W
     
     P_to = 0.5*T_to*V_to*np.sqrt(1+(2*T_to/(rho*V_to**2*A_prop)))
+
     return P_to
 
 def P_climb(W, Cl_max, Cd_climb, S, phi, rho):
@@ -105,11 +106,11 @@ def q(rho, V):
     q = 0.5*rho*V**2
     return q
 
-def A_prop(d_prop):
+def A_pr(d_prop):
     n_prop = 4
     
-    A_prop = np.pi()*d_prop**2/4*n_prop
-    return A_prop
+    A_pr = np.pi()*d_prop**2/4*n_prop
+    return A_pr
 
 def V_cruise(W, Cl, S, rho): 
     V_c = np.sqrt(2 * W / (Cl * S * rho)) 
@@ -227,7 +228,7 @@ def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0):
     E_L,t_L,_ = E_landing(W, A_prop, h_landing=20, V_des=4)
     
     t = t_t+t_Cl+t_Cr+t_L
-    E_s= E_sensors(t)
+    E_s = E_sensors(t)
     
     E = E_T+E_Cl+E_Cr+E_L+E_s
 
