@@ -10,6 +10,9 @@ import scipy as np
 #ISA
 
 def isa(h):
+    '''
+    Calculates pressure, temperature and density based on ISA at certain height.
+    '''
     #Constants
     
     T0=288.15
@@ -67,6 +70,9 @@ def isa(h):
 #FLIGHT PHASES
 
 def P_to(W, rho, A_prop, V_to):
+    '''
+    Calculates power for takeoff
+    '''
     T_to = 1.2 * W
     
     P_to = 0.5*T_to*V_to*np.sqrt(1+(2*T_to/(rho*V_to**2*A_prop)))
@@ -74,6 +80,9 @@ def P_to(W, rho, A_prop, V_to):
     return P_to
 
 def P_climb(W, Cl_max, Cd_climb, S, phi, rho):
+    '''
+    Calculates power for climb
+    '''
     phi = phi * np.pi/180
     rho_sl=1.225
     V_climb = 1.2*np.sqrt(2*W/(S*rho_sl*Cl_max))
@@ -84,12 +93,18 @@ def P_climb(W, Cl_max, Cd_climb, S, phi, rho):
     return P_climb, V_ver
 
 def P_cruise(q, S, Cd, V_cruise):
+    '''
+    Calculates power for cruise
+    '''
     T_cruise = q*S*Cd
     
     P_cruise = V_cruise*T_cruise
     return P_cruise
 
 def P_landing(W, A_prop, V_des=4):
+    '''
+    Calculates power for landing
+    '''
     rho_sl = 1.225
     K = 1
     V_h = np.sqrt(W/(2*rho_sl*A_prop))
@@ -102,28 +117,41 @@ def P_landing(W, A_prop, V_des=4):
 #FLIGHT CONDITIONS
     
 def q(rho, V):
-    
+    '''
+    Calculates dynamic pressure
+    '''
     q = 0.5*rho*V**2
     return q
 
 def A_pr(d_prop):
+    '''
+    Calculates propeller area
+    '''
     n_prop = 4
     
     A_pr = np.pi()*d_prop**2/4*n_prop
     return A_pr
 
 def V_cruise(W, Cl, S, rho): 
+    '''
+    Calculates cruise speed based on L=W
+    '''
     V_c = np.sqrt(2 * W / (Cl * S * rho)) 
     return V_c
 
 def Cd(Cl, A, e, Cd0):
-    
+    '''
+    Calculates Cd using drag polar
+    '''
     Cd = Cd0+Cl**2/(np.pi*A*e)
     return Cd
 
 #WEIGHT
     
 def W_tot(m_bat, m_eng, m_struc, m_sensors, PL=True):
+    '''
+    Calculates total weight
+    '''
     if PL:
         m_pl = 3
     else: 
@@ -136,7 +164,9 @@ def W_tot(m_bat, m_eng, m_struc, m_sensors, PL=True):
 #ENERGIES
     
 def E_to(W, A_prop, V_to=6, h_trans=20):
-    
+    '''
+    Calculates energy for takeoff
+    '''
     h = np.array([0])
     t = np.array([0])
     dt = 0.01
@@ -152,7 +182,9 @@ def E_to(W, A_prop, V_to=6, h_trans=20):
     return E, t[-1], h[-1]
 
 def E_climb(W, Cl_max, Cd_climb, S, phi, h_cruise=500, h_trans=20):
-    
+    '''
+    Calculates energy for climb
+    '''
     h = np.array([h_trans])
     t = np.array([0])
     P_c = np.array([0])
@@ -170,7 +202,10 @@ def E_climb(W, Cl_max, Cd_climb, S, phi, h_cruise=500, h_trans=20):
         
     return E, t[-1], h[-1]
         
-def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, h_cruise=500,h_trans=20,phi=45, r=75000):
+def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0,phi=45, h_cruise=500,h_trans=20, r=75000):
+    '''
+    Calculates energy for cruise
+    '''
     phi = phi * np.pi/180
     s_climb = (h_cruise-h_trans)/np.sin(phi)
     s_glide = LD*(h_cruise-h_trans)
@@ -197,7 +232,9 @@ def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, h_cruise=500,h_trans=20,phi=45, r=7
 
 
 def E_landing(W, A_prop, h_landing=20, V_des=4):
-    
+    '''
+    Calculates energy for landing
+    '''
     h = np.array([h_landing])
     t = np.array([0])
     dt = 0.01
@@ -214,17 +251,21 @@ def E_landing(W, A_prop, h_landing=20, V_des=4):
         
     
 def E_sensors(t, P_sensors=25.25):
-    
+    '''
+    Calculates energy for sensors
+    '''
     E_s = t*P_sensors
     
     return E_s 
 
 
 def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0):
-    
+    '''
+    Calculates total energy for round trip
+    '''
     E_T,t_t,_ = E_to(W, A_prop, V_to=6, h_trans=20)
     E_Cl,t_Cl,_ = E_climb(W, Cl_max, Cd_climb, S, phi, h_cruise=500, h_trans=20)
-    E_Cr,t_Cr = E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, h_cruise=500,h_trans=20,phi=45, r=75000)
+    E_Cr,t_Cr = E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, h_cruise=500,h_trans=20, r=75000)
     E_L,t_L,_ = E_landing(W, A_prop, h_landing=20, V_des=4)
     
     t = t_t+t_Cl+t_Cr+t_L
@@ -233,10 +274,3 @@ def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0):
     E = E_T+E_Cl+E_Cr+E_L+E_s
 
     return E, t
-
-
-
-
-
-
-        
