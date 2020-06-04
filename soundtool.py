@@ -16,12 +16,12 @@ spanloc_out = 0.7/2
 spanloc_in = 0.35/2
 b = 3 
 
-engine_right_out = [0, spanloc_out*3, 0]
-engine_right_in = [0, spanloc_in*3, 0]
-engine_left_out = [0, -spanloc_out*3, 0]
-engine_left_in = [0, -spanloc_in*3, 0]
+engine_right_out = [0.4613491583980512, spanloc_out*3, 0]
+engine_right_in = [0.2306745791990256, spanloc_in*3, 0]
+engine_left_out = [0.4613491583980512, -spanloc_out*3, 0]
+engine_left_in = [0.2306745791990256, -spanloc_in*3, 0]
 xyzsource = np.array((engine_right_out, engine_right_in, engine_left_out, engine_left_in))
-FW_skeleton = [[],[]]
+FW_skeleton = [[0,0.6590702262829303,0.9027022644938187,0.6960915377453957,0.9027022644938187,0.6590702262829303,0],[0,-1.5,-1.5,0,1.5,1.5,0]]
 
 
 
@@ -115,9 +115,9 @@ def position(xyzsource, xyzobserver):
     thetas = np.array([])
     for xyz in xyzsource:
         distance = np.linalg.norm(np.array(xyz)-np.array(xyzobserver))
-        opposite = np.absolute(xyz[0]-xyzobserver[0])
-        adjacent = np.absolute(xyz[1]-xyzobserver[1])
-        angle = np.arctan(opposite/ adjacent)
+        opposite = xyz[0]-xyzobserver[0]
+        adjacent = xyz[1]-xyzobserver[1]
+        angle = np.arctan2(opposite, adjacent)
         S = np.append(S,distance/0.3048)
         thetas = np.append(thetas, angle)
     
@@ -127,7 +127,8 @@ def position(xyzsource, xyzobserver):
 
 def noise(xyzsource, d_inch, P_h, T, B, RPM, h):
     '''
-    Calculates the SPL on a set of points
+    Calculates the SPL on a set of points.
+    Also produces heat map of the surroundings
     '''
     R_ft = 0.0833333333*d_inch/2
     m = 1
@@ -139,8 +140,8 @@ def noise(xyzsource, d_inch, P_h, T, B, RPM, h):
     A_b = 2/B*1/9
     
     SPLlst = list()
-    xrange = np.arange(-0.6,0.5+0.002,0.002)
-    yrange = np.arange(-1.6,1.6+0.002,0.002)
+    xrange = np.arange(-0.6,1+0.01,0.01)
+    yrange = np.arange(-1.6,1.6+0.01,0.01)
     for x in xrange:
         for y in yrange: 
             xyzobserver=[x,y,0]
@@ -170,10 +171,11 @@ def noise(xyzsource, d_inch, P_h, T, B, RPM, h):
     window = [yrange[0],yrange[-1],xrange[-1],xrange[0]]
     plt.imshow(SPLlst, cmap='Reds',extent=window)
     plt.colorbar()
+    plt.plot(FW_skeleton[1],FW_skeleton[0],"black")
     return SPLlst
 
 
-
+#BUTTERFLY PLOT
 #plst=list()
 #thetalst=list()
 #for theta in np.arange(0,2*np.pi*1.026,0.05):
@@ -190,21 +192,3 @@ def noise(xyzsource, d_inch, P_h, T, B, RPM, h):
 #plt.show()
 #plt.ylabel('p')
 #plt.xlabel('theta')
-    
-    
-
-
-#plst=list()
-#thetalst=list()
-#for B in np.arange(0,4.01,1):
-#    p,J_mb=p_m(1, 4.757217847769028, 0.645833333075, 1.36, 55.7, B, 0.7053836047832067, 0.7610127542247298)
-#    thetalst.append(B)
-#    plst.append(B*J_mb)
-#    
-#plt.plot(thetalst,plst)
-#plt.show()
-#plt.ylabel('b*bessel')
-#plt.xlabel('b')
-
-
-
