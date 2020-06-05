@@ -163,59 +163,53 @@ def W_tot(m_bat, m_eng, m_struc, m_sensors, PL=True):
 
 #ENERGIES
     
-def E_to(W, A_prop, V_to=6, h_trans=20):
+def E_to(W, A_prop, t=np.array([0]), E=np.array([0]), V_to=6, h_trans=20):
     '''
     Calculates energy for takeoff
     '''
-    h = np.array([0])
-    t = np.array([0])
+    t_begin = t[-1]
+    h = np.array([0.])
     dt = 0.01
-    E = 0
-
     while h[-1]<h_trans:
         _,_,rho = isa(round(h[-1],4))
         P = P_to(W, rho, A_prop, V_to)
-        E += P*dt
+        E = np.append(E, E[-1]+P*dt+E_sensors(dt))
         h = np.append(h,h[-1]+V_to*dt)
         t = np.append(t,t[-1]+dt)
    
-    return E, t[-1], h[-1]
+    return E, E[-1], t, t[-1]-t_begin
 
-def E_climb(W, Cl_max, Cd_climb, S, phi, h_cruise=500, h_trans=20):
+def E_climb(W, Cl_max, Cd_climb, S, phi, t=np.array([0]), E=np.array([0]), h_cruise=500, h_trans=20):
     '''
     Calculates energy for climb
     '''
+    t_begin = t[-1]
     h = np.array([h_trans])
-    t = np.array([0])
     P_c = np.array([0])
     dt = 0.01
-    E = 0
-
-    
     while h[-1]<h_cruise:
         _,_,rho = isa(round(h[-1],4))
         P, V_ver = P_climb(W, Cl_max, Cd_climb, S, phi, rho)
-        E += P*dt
+        E = np.append(E, E[-1]+P*dt+E_sensors(dt))
         h = np.append(h,h[-1]+V_ver*dt)
         t = np.append(t,t[-1]+dt)
         P_c = np.append(P_c,P)
         
-    return E, t[-1], h[-1]
+    return E, E[-1], t, t[-1]-t_begin
         
-def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0,phi=45, h_cruise=500,h_trans=20, r=75000):
+def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, t=np.array([0]), E=np.array([0]), h_cruise=500, h_trans=20, r=75000):
     '''
     Calculates energy for cruise
     '''
+    t_begin = t[-1]
     phi = phi * np.pi/180
     s_climb = (h_cruise-h_trans)/np.sin(phi)
     s_glide = LD*(h_cruise-h_trans)
     s = r-s_climb-s_glide
     
     x = np.array([0])
-    t = np.array([0])
     P_c = np.array([0])
     dt = 0.1
-    E = 0
     
     while x[-1]<s:
         _,_,rho = isa(round(h_cruise,4))
@@ -223,31 +217,30 @@ def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0,phi=45, h_cruise=500,h_trans=20, r=7
         Cd_c = Cd(Cl_cruise, A, e, Cd0)
         q_c = q(rho, V_c) 
         P = P_cruise(q_c, S, Cd_c, V_c)
-        E += P*dt
+        E = np.append(E, E[-1]+P*dt+E_sensors(dt))
         x = np.append(x,x[-1]+V_c*dt)
         t = np.append(t,t[-1]+dt)
         P_c = np.append(P_c,P)
         
-    return E, t[-1]
+    return E, E[-1], t, t[-1]-t_begin
 
 
-def E_landing(W, A_prop, h_landing=20, V_des=4):
+def E_landing(W, A_prop, t=np.array([0]), E=np.array([0]), h_landing=20, V_des=4):
     '''
     Calculates energy for landing
     '''
+    t_begin = t[-1]
     h = np.array([h_landing])
-    t = np.array([0])
     dt = 0.01
-    E = 0
 
     while h[-1]>0:
         _,_,rho = isa(round(h[-1],4))
         P = P_landing(W, A_prop,V_des=4)
-        E += P*dt
+        E = np.append(E, E[-1]+P*dt+E_sensors(dt))
         h = np.append(h,h[-1]-V_des*dt)
         t = np.append(t,t[-1]+dt)
    
-    return E, t[-1], h[-1]
+    return E, E[-1], t, t[-1]-t_begin
         
     
 def E_sensors(t, P_sensors=25.25):
@@ -259,18 +252,13 @@ def E_sensors(t, P_sensors=25.25):
     return E_s 
 
 
-def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0):
+def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, t=np.array([0]), E=np.array([0])):
     '''
     Calculates total energy for round trip
     '''
-    E_T,t_t,_ = E_to(W, A_prop, V_to=6, h_trans=20)
-    E_Cl,t_Cl,_ = E_climb(W, Cl_max, Cd_climb, S, phi, h_cruise=500, h_trans=20)
-    E_Cr,t_Cr = E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, h_cruise=500,h_trans=20, r=75000)
-    E_L,t_L,_ = E_landing(W, A_prop, h_landing=20, V_des=4)
-    
-    t = t_t+t_Cl+t_Cr+t_L
-    E_s = E_sensors(t)
-    
-    E = E_T+E_Cl+E_Cr+E_L+E_s
+    E, E_T,t,t_t = E_to(W, A_prop, t, E, V_to=6, h_trans=20)
+    E, E_Cl,t,t_Cl = E_climb(W, Cl_max, Cd_climb, S, phi, t, E, h_cruise, h_trans=20)
+    E, E_Cr,t,t_Cr = E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, t, E, h_cruise, h_trans=20, r=75000)
+    E, E_L,t,t_L = E_landing(W, A_prop, t, E, h_landing=20, V_des=4)
 
     return E, t
