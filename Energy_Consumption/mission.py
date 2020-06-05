@@ -5,8 +5,7 @@ Created on Tue May 26 17:01:49 2020
 @author: Raven
 """
 
-from functions import E_trip, W_tot
-import matplotlib.pyplot as plt
+from functions import E_trip, W_tot, plot_mission
 
 A_prop = 0.456 #P&P propeller
 Cl_max = 1.539 #Aero
@@ -25,18 +24,18 @@ m_struc = 8.71 #Interfacing
 m_sensors = 0.363 #Interfacing
 eta = 0.63 #Battery type
 DoD = 0.90 #Battery type
-EOL_corr = 0.75 #Kokam technical data sheet >3000 cycles
+EOL_corr = 0.8 #Kokam technical data sheet >3000 cycles
 h_cruise = 500 #Mission profile
  
-def main(m_bat_cell, m_bat_casing, m_eng_prop, m_struc, m_sensors, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, eta, DoD, EOL_corr, plotting=True):
+def main(m_bat_cell, m_bat_casing, m_eng_prop, m_struc, m_sensors, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, eta, DoD, EOL_corr):
     '''
     Calculates the energy required based on aerodynamic parameters and the total mass.
     Calculates the actual battery mass required for the mission, and therefore returns a fail/pass for the total mission
     '''
     W_incl, W_excl = W_tot(m_bat_cell+m_bat_casing, m_eng_prop, m_struc, m_sensors), W_tot(m_bat_cell+m_bat_casing, m_eng_prop, m_struc, m_sensors, PL=False) 
     
-    E_go, t_go = E_trip(W_incl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise)
-    E_arr, t_arr = E_trip(W_excl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, t_go, E_go)
+    E_go, t_go, P_go = E_trip(W_incl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise)
+    E_arr, t_arr, P_arr = E_trip(W_excl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, t_go, E_go, P_go)
     
     E_arr = E_arr/eta
     E_tot_req = E_arr[-1]/DoD
@@ -44,24 +43,7 @@ def main(m_bat_cell, m_bat_casing, m_eng_prop, m_struc, m_sensors, A_prop, Cl_ma
     e_d = 246*3600 # for 3X6 KOKAM
 #    e_d = 248*3600 # for 2X6 KOKAM
     
-    if plotting:
-        
-        #SOC PLOT
-        SoC_BOL_arr = (m_bat_cell*e_d-E_arr)/(m_bat_cell*e_d)*100
-        SoC_EOL_arr = (m_bat_cell*e_d-E_arr/EOL_corr)/(m_bat_cell*e_d)*100
-        
-        SoC_fig, (SoC_BOL, SoC_EOL) = plt.subplots(1,2)
-        
-        SoC_BOL.plot(t_arr,SoC_BOL_arr)
-        SoC_BOL.set_ylim(0,100)
-        SoC_EOL.plot(t_arr,SoC_EOL_arr)
-        SoC_EOL.set_ylim(0,100)
-        
-        #ENERGY PLOT
-        E_fig, E_vs_t = plt.subplots()
-        
-        E_vs_t.plot(t_arr,E_arr)
-    
+    plot_mission(m_bat_cell, e_d, EOL_corr, E_arr, t_arr, P_arr)
     
     print(E_tot_req/e_d/EOL_corr +m_bat_casing , m_bat_cell+m_bat_casing)   
     mission_failpass = E_tot_req/e_d/EOL_corr < m_bat_cell
