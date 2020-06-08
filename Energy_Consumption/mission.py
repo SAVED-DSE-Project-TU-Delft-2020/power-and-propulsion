@@ -7,22 +7,22 @@ Created on Tue May 26 17:01:49 2020
 
 from functions import E_trip, W_tot, plot_mission
 
-A_prop = 0.456 #P&P propeller
-Cl_max = 1.539 #Aero
-Cd_climb = 0.088 #Aero
+A_prop = 0.12173647185*4 #P&P propeller 15.5 inch 
+Cl_max = 1.1371 #Aero
+Cd_climb = 0.08113056706378069 #Aero
 S = 1.3 #Aero
 phi = 17 #ROC 5 m/s
-Cl_cruise = 0.2675095241 #Aero
-LD = 23.28 #Aero
+Cl_cruise = 0.42059741185947325 #Aero
+LD = 21.537381353841628 #Aero
 A = 6.923076923 #Aero
-e = 0.982 #Aero
-Cd0 = 0.0079 #Aero
+e = 0.9031273345086168 #Aero
+Cd0 = 0.009764754162966176 #Aero
 m_bat_cell = 18*0.175 #Interfacing (P&P)
 m_bat_casing = 0.45 #Interfacing (P&P)
-m_eng_prop = 4*0.4+0.5 #Interfacing
-m_struc = 8.71 #Interfacing
+m_eng_prop = 4*0.4+0.7 #Interfacing
+m_struc = 8.5 #Interfacing
 m_sensors = 0.363 #Interfacing
-eta = 0.63 #Battery type
+eta = 0.65 #Battery type
 DoD = 0.90 #Battery type
 EOL_corr = 0.8 #Kokam technical data sheet >3000 cycles
 h_cruise = 500 #Mission profile
