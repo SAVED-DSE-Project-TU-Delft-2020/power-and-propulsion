@@ -34,8 +34,8 @@ def main(m_bat_cell, m_bat_casing, m_eng_prop, m_struc, m_sensors, A_prop, Cl_ma
     '''
     W_incl, W_excl = W_tot(m_bat_cell+m_bat_casing, m_eng_prop, m_struc, m_sensors), W_tot(m_bat_cell+m_bat_casing, m_eng_prop, m_struc, m_sensors, PL=False) 
     
-    E_go, t_go, P_go = E_trip(W_incl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise)
-    E_arr, t_arr, P_arr = E_trip(W_excl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, t_go, E_go, P_go)
+    E_go, t_go, P_go, lab = E_trip(W_incl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise)
+    E_arr, t_arr, P_arr, lab = E_trip(W_excl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, t_go, E_go, P_go, lab, trip='back')
     
     E_arr = E_arr/eta
     E_tot_req = E_arr[-1]/DoD
@@ -43,12 +43,10 @@ def main(m_bat_cell, m_bat_casing, m_eng_prop, m_struc, m_sensors, A_prop, Cl_ma
     e_d = 246*3600 # for 3X6 KOKAM
 #    e_d = 248*3600 # for 2X6 KOKAM
     
-    plot_mission(m_bat_cell, e_d, EOL_corr, E_arr, t_arr, P_arr)
+    plot_mission(m_bat_cell, e_d, EOL_corr, E_arr, t_arr, P_arr, lab)
     
     print(E_tot_req/e_d/EOL_corr +m_bat_casing , m_bat_cell+m_bat_casing)   
     mission_failpass = E_tot_req/e_d/EOL_corr < m_bat_cell
 
     return E_tot_req, mission_failpass
-
-
 

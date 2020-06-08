@@ -267,44 +267,60 @@ def E_sensors(t, P_sensors=25.25):
     return E_s
 
 
-def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, t=np.array([0]), E=np.array([0]), P_arr=np.array([0])):
+def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), lab=np.array([]), trip='go'):
     '''
     Calculates total energy for round trip
     '''
-    E, E_T,t,t_t, P_arr = E_to(W, A_prop, t, E, P_arr, V_to=6, h_trans=20)
-    E, E_Cl,t,t_Cl, P_arr = E_climb(W, Cl_max, Cd_climb, S, phi, t, E, P_arr, h_cruise, h_trans=20)
-    E, E_Cr,t,t_Cr, P_arr, s_glide = E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, t, E, P_arr, h_cruise, h_trans=20, r=75000)
-    E, E_g,t,t_g, P_arr = E_gliding(s_glide, 20, t, E, P_arr)
-    E, E_L,t,t_L, P_arr = E_landing(W, A_prop, t, E, P_arr, h_landing=20, V_des=4)
-
-
     
-    return E, t, P_arr
+    E, E_T,t,t_t, P_arr = E_to(W, A_prop, t, E, P_arr, V_to=6, h_trans=20)
+    lab = np.append(lab, np.full((1, len(E)-len(lab)),'takeoff'+trip))
+    E, E_Cl,t,t_Cl, P_arr = E_climb(W, Cl_max, Cd_climb, S, phi, t, E, P_arr, h_cruise, h_trans=20)
+    lab = np.append(lab, np.full((1, len(E)-len(lab)),'climb'+trip))
+    E, E_Cr,t,t_Cr, P_arr, s_glide = E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, t, E, P_arr, h_cruise, h_trans=20, r=75000)
+    lab = np.append(lab, np.full((1, len(E)-len(lab)),'cruise'+trip))
+    E, E_g,t,t_g, P_arr = E_gliding(s_glide, 20, t, E, P_arr)
+    lab = np.append(lab, np.full((1, len(E)-len(lab)),'glide'+trip))
+    E, E_L,t,t_L, P_arr = E_landing(W, A_prop, t, E, P_arr, h_landing=20, V_des=4)
+    lab = np.append(lab, np.full((1, len(E)-len(lab)),'landing'+trip))
+    
+    return E, t, P_arr, lab
 
 
-def plot_mission(m_bat_cell, e_d, EOL_corr, E_arr, t_arr, P_arr):
-        
-        
+def plot_mission(m_bat_cell, e_d, EOL_corr, E_arr, t_arr, P_arr, lab):
+
     #SOC PLOT
     SoC_BOL_arr = (m_bat_cell*e_d-E_arr)/(m_bat_cell*e_d)*100
     SoC_EOL_arr = (m_bat_cell*e_d-E_arr/EOL_corr)/(m_bat_cell*e_d)*100
     
-    SoC_fig, (SoC_BOL, SoC_EOL) = plt.subplots(1,2)
-    
-    SoC_BOL.plot(t_arr,SoC_BOL_arr)
-    SoC_BOL.set_ylim(0,100)
-    SoC_EOL.plot(t_arr,SoC_EOL_arr)
-    SoC_EOL.set_ylim(0,100)
+#    SoC_fig, (SoC_BOL, SoC_EOL) = plt.subplots(1,2)
+#    
+#    SoC_BOL.plot(t_arr,SoC_BOL_arr)
+#    SoC_BOL.set_ylim(0,100)
+#    SoC_EOL.plot(t_arr,SoC_EOL_arr)
+#    SoC_EOL.set_ylim(0,100)
     
     #ENERGY PLOT
-    E_P_fig, (E_vs_t, P_vs_t) = plt.subplots(1,2)
+    E_fig, E_vs_t = plt.subplots()
     
-    E_vs_t.plot(t_arr,E_arr)
-    P_arr[P_arr<1]=1
-    P_vs_t.plot(t_arr,np.log10(P_arr))
-    P_vs_t.set_yscale('log')
-        
-        
+#    E_vs_t.plot(t_arr,E_arr)
+    E_vs_t.plot(t_arr[lab=='takeoffgo'], E_arr[lab=='takeoffgo'])
+    E_vs_t.plot(t_arr[lab=='takeoffback'], E_arr[lab=='takeoffback'])
+    E_vs_t.plot([],[],label="takeoff")
+    E_vs_t.plot(t_arr[lab=='climbgo'], E_arr[lab=='climbgo'])
+    E_vs_t.plot(t_arr[lab=='climbback'], E_arr[lab=='climbback'])
+    E_vs_t.plot([],[],label="climb")
+    E_vs_t.plot(t_arr[lab=='cruisego'], E_arr[lab=='cruisego'], label= "cruise")
+    E_vs_t.plot(t_arr[lab=='glidego'], E_arr[lab=='glidego'], label="glide")
+    E_vs_t.plot(t_arr[lab=='landinggo'], E_arr[lab=='landinggo'], label='landing')
+    plt.legend(loc="upper left", fontsize=22)
+    #POWER PLOTS
+#    P_fig, P = plt.subplots(1,5)
+#    
+#    P[0,0].plot(t_arr[lab=='takeoffgo'], P_arr[lab=='takeoffgo'])
+#    P[0,1].plot(t_arr[lab=='climbgo'], P_arr[lab=='climbgo'])
+#    P[0,2].plot(t_arr[lab=='cruisego'], P_arr[lab=='cruisego'])
+#    P[0,3].plot(t_arr[lab=='glidego'], P_arr[lab=='glidego'])
+#    P[0,4].plot(t_arr[lab=='landinggo'], P_arr[lab=='landinggo'])
         
         
         
