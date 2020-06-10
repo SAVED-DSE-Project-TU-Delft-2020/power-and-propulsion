@@ -98,7 +98,6 @@ def P_cruise(q, S, Cd, V_cruise):
     Calculates power for cruise
     '''
     T_cruise = q*S*Cd
-    
     P_cruise = V_cruise*T_cruise
     return P_cruise
 
@@ -171,10 +170,12 @@ def E_to(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), V_to=
     t_begin = t[-1]
     h = np.array([0.])
     dt = 0.01
+    
     while h[-1]<h_trans:
         _,_,rho = isa(round(h[-1],4))
         P = P_to(W, rho, A_prop, V_to)
-        E = np.append(E, E[-1]+P*dt+E_sensors(dt))
+        eta_to = 0.4
+        E = np.append(E, E[-1]+P*dt/eta_to+E_sensors(dt))
         h = np.append(h,h[-1]+V_to*dt)
         t = np.append(t,t[-1]+dt)
         P_arr = np.append(P_arr,P)
@@ -188,17 +189,19 @@ def E_climb(W, Cl_max, Cd_climb, S, phi, t=np.array([0]), E=np.array([0]), P_arr
     t_begin = t[-1]
     h = np.array([h_trans])
     dt = 0.01
+
     while h[-1]<h_cruise:
         _,_,rho = isa(round(h[-1],4))
         P, V_ver = P_climb(W, Cl_max, Cd_climb, S, phi, rho)
-        E = np.append(E, E[-1]+P*dt+E_sensors(dt))
+        eta_climb = 0.6
+        E = np.append(E, E[-1]+P*dt/eta_climb+E_sensors(dt))
         h = np.append(h,h[-1]+V_ver*dt)
         t = np.append(t,t[-1]+dt)
         P_arr = np.append(P_arr,P)
         
     return E, E[-1], t, t[-1]-t_begin, P_arr
         
-def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), h_cruise=500, h_trans=20, r=75000):
+def E_cruise(W, S, Cl_cruise, LD, phi, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), h_cruise=500, h_trans=20, r=75000):
     '''
     Calculates energy for cruise
     '''
@@ -214,10 +217,11 @@ def E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, t=np.array([0]), E=np.array([0
     while x[-1]<s:
         _,_,rho = isa(round(h_cruise,4))
         V_c = V_cruise(W, Cl_cruise, S, rho)
-        Cd_c = Cd(Cl_cruise, A, e, Cd0)
+        Cd_c = Cl_cruise/LD
         q_c = q(rho, V_c) 
         P = P_cruise(q_c, S, Cd_c, V_c)
-        E = np.append(E, E[-1]+P*dt+E_sensors(dt))
+        eta_cruise = 0.65
+        E = np.append(E, E[-1]+P*dt/eta_cruise+E_sensors(dt))
         x = np.append(x,x[-1]+V_c*dt)
         t = np.append(t,t[-1]+dt)
         P_arr = np.append(P_arr,P)
@@ -250,7 +254,8 @@ def E_landing(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), 
     while h[-1]>0:
         _,_,rho = isa(round(h[-1],4))
         P = P_landing(W, A_prop,V_des=4)
-        E = np.append(E, E[-1]+P*dt+E_sensors(dt))
+        eta_landing = 0.4
+        E = np.append(E, E[-1]+P*dt/eta_landing+E_sensors(dt))
         h = np.append(h,h[-1]-V_des*dt)
         t = np.append(t,t[-1]+dt)
         P_arr = np.append(P_arr,P)
@@ -267,7 +272,7 @@ def E_sensors(t, P_sensors=25.25):
     return E_s
 
 
-def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_cruise, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), lab=np.array([]), trip='go'):
+def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, h_cruise, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), lab=np.array([]), trip='go'):
     '''
     Calculates total energy for round trip
     '''
@@ -276,7 +281,7 @@ def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, A, e, Cd0, h_crui
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'takeoff'+trip))
     E, E_Cl,t,t_Cl, P_arr = E_climb(W, Cl_max, Cd_climb, S, phi, t, E, P_arr, h_cruise, h_trans=20)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'climb'+trip))
-    E, E_Cr,t,t_Cr, P_arr, s_glide = E_cruise(W, S, Cl_cruise, LD, A, e, Cd0, phi, t, E, P_arr, h_cruise, h_trans=20, r=75000)
+    E, E_Cr,t,t_Cr, P_arr, s_glide = E_cruise(W, S, Cl_cruise, LD, phi, t, E, P_arr, h_cruise, h_trans=20, r=75000)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'cruise'+trip))
     E, E_g,t,t_g, P_arr = E_gliding(s_glide, 20, t, E, P_arr)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'glide'+trip))
@@ -292,27 +297,27 @@ def plot_mission(m_bat_cell, e_d, EOL_corr, E_arr, t_arr, P_arr, lab):
     SoC_BOL_arr = (m_bat_cell*e_d-E_arr)/(m_bat_cell*e_d)*100
     SoC_EOL_arr = (m_bat_cell*e_d-E_arr/EOL_corr)/(m_bat_cell*e_d)*100
     
-#    SoC_fig, (SoC_BOL, SoC_EOL) = plt.subplots(1,2)
-#    
-#    SoC_BOL.plot(t_arr,SoC_BOL_arr)
-#    SoC_BOL.set_ylim(0,100)
-#    SoC_EOL.plot(t_arr,SoC_EOL_arr)
-#    SoC_EOL.set_ylim(0,100)
+    SoC_fig, (SoC_BOL, SoC_EOL) = plt.subplots(1,2)
+    
+    SoC_BOL.plot(t_arr,SoC_BOL_arr)
+    SoC_BOL.set_ylim(0,100)
+    SoC_EOL.plot(t_arr,SoC_EOL_arr)
+    SoC_EOL.set_ylim(0,100)
     
     #ENERGY PLOT
     E_fig, E_vs_t = plt.subplots()
     
-#    E_vs_t.plot(t_arr,E_arr)
-    E_vs_t.plot(t_arr[lab=='takeoffgo'], E_arr[lab=='takeoffgo'])
-    E_vs_t.plot(t_arr[lab=='takeoffback'], E_arr[lab=='takeoffback'])
-    E_vs_t.plot([],[],label="takeoff")
-    E_vs_t.plot(t_arr[lab=='climbgo'], E_arr[lab=='climbgo'])
-    E_vs_t.plot(t_arr[lab=='climbback'], E_arr[lab=='climbback'])
-    E_vs_t.plot([],[],label="climb")
-    E_vs_t.plot(t_arr[lab=='cruisego'], E_arr[lab=='cruisego'], label= "cruise")
-    E_vs_t.plot(t_arr[lab=='glidego'], E_arr[lab=='glidego'], label="glide")
-    E_vs_t.plot(t_arr[lab=='landinggo'], E_arr[lab=='landinggo'], label='landing')
-    plt.legend(loc="upper left", fontsize=22)
+    E_vs_t.plot(t_arr,E_arr)
+#    E_vs_t.plot(t_arr[lab=='takeoffgo'], E_arr[lab=='takeoffgo'])
+#    E_vs_t.plot(t_arr[lab=='takeoffback'], E_arr[lab=='takeoffback'])
+#    E_vs_t.plot([],[],label="takeoff")
+#    E_vs_t.plot(t_arr[lab=='climbgo'], E_arr[lab=='climbgo'])
+#    E_vs_t.plot(t_arr[lab=='climbback'], E_arr[lab=='climbback'])
+#    E_vs_t.plot([],[],label="climb")
+#    E_vs_t.plot(t_arr[lab=='cruisego'], E_arr[lab=='cruisego'], label= "cruise")
+#    E_vs_t.plot(t_arr[lab=='glidego'], E_arr[lab=='glidego'], label="glide")
+#    E_vs_t.plot(t_arr[lab=='landinggo'], E_arr[lab=='landinggo'], label='landing')
+#    plt.legend(loc="upper left", fontsize=22)
     #POWER PLOTS
 #    P_fig, P = plt.subplots(1,5)
 #    
