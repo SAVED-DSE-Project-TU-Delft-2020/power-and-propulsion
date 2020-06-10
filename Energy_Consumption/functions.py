@@ -151,10 +151,8 @@ def V_r(RPM, d_inch, r):
     '''
     rads = 0.104719755*RPM
     r_inch = d_inch/2
-    r_ft = 0.0254*r_inch
-    
-    V_r = rads*r_ft*r
-    
+    r_m = 0.0254*r_inch
+    V_r = rads*r_m*r
     return V_r
 
 def v_axial_propeller(V_0,T,rho,A_prop):
@@ -185,6 +183,11 @@ def FM(CT, Cd0, sigma=0.054, k=1.15):
     denominator = k*CT**(3/2)/np.sqrt(2)+sigma*Cd0/8
     return nominator/denominator
 
+def RPM(T):
+    '''
+    Calculates RPM through empirical relation
+    '''
+    return 106*T+2831
 #WEIGHT
     
 def W_tot(m_bat, m_eng, m_struc, m_sensors, PL=True):
@@ -202,7 +205,7 @@ def W_tot(m_bat, m_eng, m_struc, m_sensors, PL=True):
 
 #ENERGIES
     
-def E_to(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), V_to=6, h_trans=20):
+def E_to(W, A_prop, Cd0, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), V_to=6, h_trans=20):
     '''
     Calculates energy for takeoff
     '''
@@ -213,9 +216,11 @@ def E_to(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), V_to=
     while h[-1]<h_trans:
         _,_,rho = isa(round(h[-1],4))
         P, T = P_to(W, rho, A_prop, V_to)
-        V_a = v_axial_propeller(V_to,T,rho,A_prop)
-        eta_prop = n_prop(V_a,V_to)
-        eta_to = 0.866*0.98*eta_prop  #eta_motor*eta_ESC*eta_prop
+        RPM_to = RPM(T)
+        V_tip = V_r(RPM_to,15.5,1)
+        CT_to = CT(T,rho,A_prop,V_tip)
+        FM_to = FM(CT_to, Cd0)
+        eta_to = 0.866*0.98*FM_to  #eta_motor*eta_ESC*eta_prop
         E = np.append(E, E[-1]+P*dt/eta_to+E_sensors(dt))
         h = np.append(h,h[-1]+V_to*dt)
         t = np.append(t,t[-1]+dt)
@@ -288,7 +293,7 @@ def E_gliding(s_glide, V_glide, t=np.array([0]), E=np.array([0]), P_arr=np.array
         
     return E, E[-1], t, t[-1]-t_begin, P_arr
 
-def E_landing(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), h_landing=20, V_des=4):
+def E_landing(W, A_prop, Cd0, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), h_landing=20, V_des=4):
     '''
     Calculates energy for landing
     '''
@@ -300,9 +305,11 @@ def E_landing(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), 
     while h[-1]>0:
         _,_,rho = isa(round(h[-1],4))
         P, T = P_landing(W, A_prop,V_des)
-        V_a = v_axial_propeller(V_des,T,rho,A_prop)
-        eta_prop = n_prop(V_a,V_des)
-        eta_landing = 0.866*0.98*eta_prop  #eta_motor*eta_ESC*eta_prop
+        RPM_la = RPM(T)
+        V_tip = V_r(RPM_la,15.5,1)
+        CT_la = CT(T,rho,A_prop,V_tip)
+        FM_la = FM(CT_la, Cd0)
+        eta_landing = 0.866*0.98*FM_la  #eta_motor*eta_ESC*eta_prop
         E = np.append(E, E[-1]+P*dt/eta_landing+E_sensors(dt))
         h = np.append(h,h[-1]-V_des*dt)
         t = np.append(t,t[-1]+dt)
@@ -320,12 +327,12 @@ def E_sensors(t, P_sensors=25.25):
     return E_s
 
 
-def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, h_cruise, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), lab=np.array([]), trip='go'):
+def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, Cd0, h_cruise, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), lab=np.array([]), trip='go'):
     '''
     Calculates total energy for round trip
     '''
     
-    E, E_T,t,t_t, P_arr = E_to(W, A_prop, t, E, P_arr, V_to=6, h_trans=20)
+    E, E_T,t,t_t, P_arr = E_to(W, A_prop, Cd0, t, E, P_arr, V_to=6, h_trans=20)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'takeoff'+trip))
     E, E_Cl,t,t_Cl, P_arr = E_climb(W, Cl_max, Cd_climb, S, phi, A_prop, t, E, P_arr, h_cruise, h_trans=20)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'climb'+trip))
@@ -333,7 +340,7 @@ def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, h_cruise, t=np.ar
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'cruise'+trip))
     E, E_g,t,t_g, P_arr = E_gliding(s_glide, 17, t, E, P_arr)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'glide'+trip))
-    E, E_L,t,t_L, P_arr = E_landing(W, A_prop, t, E, P_arr, h_landing=20, V_des=4)
+    E, E_L,t,t_L, P_arr = E_landing(W, A_prop, Cd0, t, E, P_arr, h_landing=20, V_des=4)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'landing'+trip))
     
     return E, t, P_arr, lab
