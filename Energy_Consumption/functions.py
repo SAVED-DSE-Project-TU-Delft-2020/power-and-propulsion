@@ -75,10 +75,8 @@ def P_to(W, rho, A_prop, V_to):
     Calculates power for takeoff
     '''
     T_to = 1.2 * W
-    
     P_to = 0.5*T_to*V_to*np.sqrt(1+(2*T_to/(rho*V_to**2*A_prop)))
-
-    return P_to
+    return P_to, T_to
 
 def P_climb(W, Cl_max, Cd_climb, S, phi, rho):
     '''
@@ -89,9 +87,9 @@ def P_climb(W, Cl_max, Cd_climb, S, phi, rho):
     V_climb = 1.2*np.sqrt(2*W/(S*rho_sl*Cl_max))
     V_ver = V_climb*np.sin(phi)
     q_c = q(rho, V_climb)
-    
-    P_climb = (W * np.sin(phi) + Cd_climb*q_c*S)*V_climb
-    return P_climb, V_ver
+    T_climb = W * np.sin(phi) + Cd_climb*q_c*S
+    P_climb = T_climb*V_climb
+    return P_climb, V_ver, V_climb, T_climb
 
 def P_cruise(q, S, Cd, V_cruise):
     '''
@@ -99,7 +97,7 @@ def P_cruise(q, S, Cd, V_cruise):
     '''
     T_cruise = q*S*Cd
     P_cruise = V_cruise*T_cruise
-    return P_cruise
+    return P_cruise, T_cruise
 
 def P_landing(W, A_prop, V_des=4):
     '''
@@ -110,9 +108,8 @@ def P_landing(W, A_prop, V_des=4):
     V_h = np.sqrt(W/(2*rho_sl*A_prop))
     x = -V_des/V_h
     V_i = (K-1.125*x -1.372*x**2-1.718*x**3-0.655*x**4)*V_h
-    
     P_landing = K*W*(V_i-V_des)
-    return P_landing
+    return P_landing, W
 
 #FLIGHT CONDITIONS
     
@@ -146,6 +143,48 @@ def Cd(Cl, A, e, Cd0):
     Cd = Cd0+Cl**2/(np.pi*A*e)
     return Cd
 
+#PROPELLER CONDITIONS
+    
+def V_r(RPM, d_inch, r):
+    '''
+    Calculates velocity based on radial position and rpm
+    '''
+    rads = 0.104719755*RPM
+    r_inch = d_inch/2
+    r_ft = 0.0254*r_inch
+    
+    V_r = rads*r_ft*r
+    
+    return V_r
+
+def v_axial_propeller(V_0,T,rho,A_prop):
+    '''
+    Calculates the axial velocity
+    '''
+    A_prop = A_prop/4 #single propeller area
+    v_a = 0.5*(-V_0 + np.sqrt(V_0**2 + 2*T/(rho*A_prop))) #Equation A.29 PhD Veldhuis
+    return v_a 
+
+def n_prop(V_a,V_cruise): 
+    '''
+    Calculates the efficiency of the propulsion
+    '''
+    return  V_cruise/(V_cruise+V_a)
+
+def CT(T,rho,A_prop,V_tip):
+    '''
+    Calculates the thrust coefficient
+    '''
+    return T/(rho*A_prop*V_tip**2)
+
+def FM(CT, Cd0, sigma=0.054, k=1.15):
+    '''
+    Calculates the figure of merit
+    '''
+    nominator = CT**(3/2)/np.sqrt(2)
+    denominator = k*CT**(3/2)/np.sqrt(2)+sigma*Cd0/8
+    return nominator/denominator
+
 #WEIGHT
     
 def W_tot(m_bat, m_eng, m_struc, m_sensors, PL=True):
@@ -173,8 +212,10 @@ def E_to(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), V_to=
     
     while h[-1]<h_trans:
         _,_,rho = isa(round(h[-1],4))
-        P = P_to(W, rho, A_prop, V_to)
-        eta_to = 0.4
+        P, T = P_to(W, rho, A_prop, V_to)
+        V_a = v_axial_propeller(V_to,T,rho,A_prop)
+        eta_prop = n_prop(V_a,V_to)
+        eta_to = 0.866*0.98*eta_prop  #eta_motor*eta_ESC*eta_prop
         E = np.append(E, E[-1]+P*dt/eta_to+E_sensors(dt))
         h = np.append(h,h[-1]+V_to*dt)
         t = np.append(t,t[-1]+dt)
@@ -182,7 +223,7 @@ def E_to(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), V_to=
    
     return E, E[-1], t, t[-1]-t_begin, P_arr
 
-def E_climb(W, Cl_max, Cd_climb, S, phi, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), h_cruise=500, h_trans=20):
+def E_climb(W, Cl_max, Cd_climb, S, phi, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), h_cruise=500, h_trans=20):
     '''
     Calculates energy for climb
     '''
@@ -192,8 +233,10 @@ def E_climb(W, Cl_max, Cd_climb, S, phi, t=np.array([0]), E=np.array([0]), P_arr
 
     while h[-1]<h_cruise:
         _,_,rho = isa(round(h[-1],4))
-        P, V_ver = P_climb(W, Cl_max, Cd_climb, S, phi, rho)
-        eta_climb = 0.6
+        P, V_ver, V_climb, T = P_climb(W, Cl_max, Cd_climb, S, phi, rho)
+        V_a = v_axial_propeller(V_climb,T,rho,A_prop)
+        eta_prop = n_prop(V_a,V_climb)
+        eta_climb = 0.866*0.98*eta_prop  #eta_motor*eta_ESC*
         E = np.append(E, E[-1]+P*dt/eta_climb+E_sensors(dt))
         h = np.append(h,h[-1]+V_ver*dt)
         t = np.append(t,t[-1]+dt)
@@ -201,7 +244,7 @@ def E_climb(W, Cl_max, Cd_climb, S, phi, t=np.array([0]), E=np.array([0]), P_arr
         
     return E, E[-1], t, t[-1]-t_begin, P_arr
         
-def E_cruise(W, S, Cl_cruise, LD, phi, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), h_cruise=500, h_trans=20, r=75000):
+def E_cruise(W, S, Cl_cruise, LD, phi, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), h_cruise=500, h_trans=20, r=75000):
     '''
     Calculates energy for cruise
     '''
@@ -219,8 +262,10 @@ def E_cruise(W, S, Cl_cruise, LD, phi, t=np.array([0]), E=np.array([0]), P_arr=n
         V_c = V_cruise(W, Cl_cruise, S, rho)
         Cd_c = Cl_cruise/LD
         q_c = q(rho, V_c) 
-        P = P_cruise(q_c, S, Cd_c, V_c)
-        eta_cruise = 0.65
+        P, T = P_cruise(q_c, S, Cd_c, V_c)
+        V_a = v_axial_propeller(V_c,T,rho,A_prop)
+        eta_prop = n_prop(V_a,V_c)
+        eta_cruise = 0.866*0.98*eta_prop  #eta_motor*eta_ESC*eta_prop
         E = np.append(E, E[-1]+P*dt/eta_cruise+E_sensors(dt))
         x = np.append(x,x[-1]+V_c*dt)
         t = np.append(t,t[-1]+dt)
@@ -250,11 +295,14 @@ def E_landing(W, A_prop, t=np.array([0]), E=np.array([0]), P_arr=np.array([0]), 
     t_begin = t[-1]
     h = np.array([h_landing])
     dt = 0.01
+    V_des = 4
 
     while h[-1]>0:
         _,_,rho = isa(round(h[-1],4))
-        P = P_landing(W, A_prop,V_des=4)
-        eta_landing = 0.4
+        P, T = P_landing(W, A_prop,V_des)
+        V_a = v_axial_propeller(V_des,T,rho,A_prop)
+        eta_prop = n_prop(V_a,V_des)
+        eta_landing = 0.866*0.98*eta_prop  #eta_motor*eta_ESC*eta_prop
         E = np.append(E, E[-1]+P*dt/eta_landing+E_sensors(dt))
         h = np.append(h,h[-1]-V_des*dt)
         t = np.append(t,t[-1]+dt)
@@ -279,11 +327,11 @@ def E_trip(W, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, h_cruise, t=np.ar
     
     E, E_T,t,t_t, P_arr = E_to(W, A_prop, t, E, P_arr, V_to=6, h_trans=20)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'takeoff'+trip))
-    E, E_Cl,t,t_Cl, P_arr = E_climb(W, Cl_max, Cd_climb, S, phi, t, E, P_arr, h_cruise, h_trans=20)
+    E, E_Cl,t,t_Cl, P_arr = E_climb(W, Cl_max, Cd_climb, S, phi, A_prop, t, E, P_arr, h_cruise, h_trans=20)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'climb'+trip))
-    E, E_Cr,t,t_Cr, P_arr, s_glide = E_cruise(W, S, Cl_cruise, LD, phi, t, E, P_arr, h_cruise, h_trans=20, r=75000)
+    E, E_Cr,t,t_Cr, P_arr, s_glide = E_cruise(W, S, Cl_cruise, LD, phi, A_prop, t, E, P_arr, h_cruise, h_trans=20, r=75000)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'cruise'+trip))
-    E, E_g,t,t_g, P_arr = E_gliding(s_glide, 20, t, E, P_arr)
+    E, E_g,t,t_g, P_arr = E_gliding(s_glide, 17, t, E, P_arr)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'glide'+trip))
     E, E_L,t,t_L, P_arr = E_landing(W, A_prop, t, E, P_arr, h_landing=20, V_des=4)
     lab = np.append(lab, np.full((1, len(E)-len(lab)),'landing'+trip))

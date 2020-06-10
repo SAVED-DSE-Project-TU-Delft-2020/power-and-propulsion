@@ -10,18 +10,20 @@ from functions import E_trip, W_tot, plot_mission
 A_prop = 0.12173647185*4 #P&P propeller 15.5 inch 
 Cl_max = 1.1371 #Aero
 Cd_climb = 0.08113056706378069 #Aero
-S = 1.3 #Aero
-phi = 17 #ROC 5 m/s
+S = 1.318374324 #Planform
+phi = 17 #ROC 5 m/s [deg]
 Cl_cruise = 0.42059741185947325 #Aero
 LD = 21.537381353841628 #Aero
+Cd0 = 0.00976 #Aero
 m_bat_cell = 18*0.175 #(P&P)
 m_bat_casing = 0.45 #(P&P)
-m_tot = 17.4484 #Interfacing
+m_tot = 17.4754 #Interfacing
 DoD = 0.90 #Battery type
+eta_bat = 0.99 #battery efficiency
 EOL_corr = 0.8 #Kokam technical data sheet >3000 cycles
 h_cruise = 500 #Mission profile
  
-def main(m_tot, m_bat_cell, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, Cd0, h_cruise, DoD, EOL_corr):
+def main(m_tot, m_bat_cell, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, Cd0, h_cruise, DoD, EOL_corr, eta_bat):
     '''
     Calculates the energy required based on aerodynamic parameters and the total mass.
     Calculates the actual battery mass required for the mission, and therefore returns a fail/pass for the total mission
@@ -30,6 +32,8 @@ def main(m_tot, m_bat_cell, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, Cd0, h_
     
     E_go, t_go, P_go, lab = E_trip(W_incl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, h_cruise)
     E_arr, t_arr, P_arr, lab = E_trip(W_excl, A_prop, Cl_max, Cd_climb, S, phi, Cl_cruise, LD, h_cruise, t_go, E_go, P_go, lab, trip='back')
+    
+    E_arr = E_arr/eta_bat
     
     E_tot_req = E_arr[-1]/DoD
     
