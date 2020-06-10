@@ -22,7 +22,7 @@ engine_left_out = [0.4613491583980512, -spanloc_out*3, 0]
 engine_left_in = [0.2306745791990256, -spanloc_in*3, 0]
 xyzsource = np.array((engine_right_out, engine_right_in, engine_left_out, engine_left_in))
 FW_skeleton = [[0,0.6590702262829303,0.9027022644938187,0.6960915377453957,0.9027022644938187,0.6590702262829303,0],[0,-1.5,-1.5,0,1.5,1.5,0]]
-CG_loc = [-1,0]
+CG_loc = [0.3,0]
 
 
 def p_m(m, S, R, P_h, T, B, M_t, theta):
@@ -172,7 +172,7 @@ def noise_heat(xyzsource, d_inch, P_h, T, B, RPM, h):
             p_sum = sum(p_rn)+sum(p_v)
             SPL = p_to_SPL(p_sum)
             if SPL>120:
-                SPLlst.append(np.nan)
+                SPLlst.append(120)
             else:
                 SPLlst.append(SPL)
 
@@ -198,17 +198,20 @@ def req_noise(xyzsource, d_inch, P_h, T, B, RPM, h, r, CG, PWL_req):
     
     #Assumption blade area
     A_b = 2/B*1/12
+    thetalst = list()
     
     for theta in np.arange(0,360+1,1):
         
         x = r*np.sin(theta)
         y = r*np.cos(theta)
+        thetalst.append(theta)
         
         xyzobserver=[x,y,0]
         S, theta = position(xyzsource, xyzobserver)
     
         p_rn = list()
         p_v = list()
+
         
         for S, theta in zip(S, theta):
             #ORDERED ROTATIONAL NOISE PRESSURE AT OBSERVER
@@ -220,12 +223,13 @@ def req_noise(xyzsource, d_inch, P_h, T, B, RPM, h, r, CG, PWL_req):
             vortexp = SPL_to_p(vortexSPL_obs)
             p_v.append(vortexp)
         
+        
         p_sum = sum(p_rn+p_v)
         
         SPL = p_to_SPL(p_sum)
         SPLlst.append(SPL)
         
-    return max(SPLlst)
+    return max(SPLlst), thetalst, SPLlst
     
     
 
